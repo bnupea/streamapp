@@ -36,11 +36,13 @@ async def startup_db_client():
 @app.get("/health/env", tags=["health"])
 async def health_env():
     """Check environment variables (for debugging)"""
-    mongo_uri = os.getenv("MONGO_URI")
+    mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGO_URL")
+    mongo_uri_var = "MONGO_URI" if os.getenv("MONGO_URI") else ("MONGO_URL" if os.getenv("MONGO_URL") else None)
     db_name = os.getenv("DB_NAME", "assignmentdb")
     
     return {
         "MONGO_URI_set": bool(mongo_uri),
+        "MONGO_URI_var_name": mongo_uri_var,
         "MONGO_URI_length": len(mongo_uri) if mongo_uri else 0,
         "MONGO_URI_preview": f"{mongo_uri[:20]}..." if mongo_uri and len(mongo_uri) > 20 else (mongo_uri if mongo_uri else "NOT SET"),
         "DB_NAME": db_name,
@@ -54,7 +56,7 @@ async def health_db(
 ):
     """Health check endpoint for MongoDB connection"""
     db_name = os.getenv("DB_NAME", "assignmentdb")
-    mongo_uri = os.getenv("MONGO_URI", "not set")
+    mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGO_URL") or "not set"
     
     try:
         # Test connection with ping command

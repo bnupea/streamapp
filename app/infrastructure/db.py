@@ -13,13 +13,14 @@ logger = logging.getLogger(__name__)
 
 @lru_cache()
 def get_client() -> AsyncIOMotorClient:
-    mongo_uri = os.getenv("MONGO_URI")
+    # Check for MONGO_URI first (preferred), then fall back to MONGO_URL
+    mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGO_URL")
     
     # Debug: Log available environment variables (without sensitive values)
     if not mongo_uri:
-        logger.warning("MONGO_URI not found in environment variables")
+        logger.warning("MONGO_URI/MONGO_URL not found in environment variables")
         # List all env vars that start with MONGO or DB for debugging
-        relevant_vars = {k: "***" if "PASSWORD" in k.upper() or "SECRET" in k.upper() or "URI" in k.upper() else v 
+        relevant_vars = {k: "***" if "PASSWORD" in k.upper() or "SECRET" in k.upper() or "URI" in k.upper() or "URL" in k.upper() else v 
                         for k, v in os.environ.items() 
                         if "MONGO" in k.upper() or "DB" in k.upper()}
         logger.info(f"Relevant environment variables found: {list(relevant_vars.keys())}")
@@ -27,7 +28,7 @@ def get_client() -> AsyncIOMotorClient:
     if not mongo_uri:
         # Provide helpful error message for deployment
         error_msg = (
-            "MONGO_URI environment variable is not set.\n"
+            "MONGO_URI or MONGO_URL environment variable is not set.\n"
             "For deployment, set it in your platform's environment variables:\n"
             "  - Render: Add in Environment tab\n"
             "  - Heroku: Use 'heroku config:set MONGO_URI=...'\n"
@@ -38,8 +39,11 @@ def get_client() -> AsyncIOMotorClient:
         )
         raise ValueError(error_msg)
     
-    # Log that we found the URI (but don't log the actual value for security)
-    logger.info("MONGO_URI found in environment variables")
+    # Log which variable was used (but don't log the actual value for security)
+    if os.getenv("MONGO_URI"):
+        logger.info("MONGO_URI found in environment variables")
+    elif os.getenv("MONGO_URL"):
+        logger.info("MONGO_URL found in environment variables (using as MONGO_URI)")
     
     # Connection options for production deployments
     # These help with connection stability and timeout handling
