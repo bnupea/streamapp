@@ -33,6 +33,21 @@ async def startup_db_client():
 
 
 
+@app.get("/health/env", tags=["health"])
+async def health_env():
+    """Check environment variables (for debugging)"""
+    mongo_uri = os.getenv("MONGO_URI")
+    db_name = os.getenv("DB_NAME", "assignmentdb")
+    
+    return {
+        "MONGO_URI_set": bool(mongo_uri),
+        "MONGO_URI_length": len(mongo_uri) if mongo_uri else 0,
+        "MONGO_URI_preview": f"{mongo_uri[:20]}..." if mongo_uri and len(mongo_uri) > 20 else (mongo_uri if mongo_uri else "NOT SET"),
+        "DB_NAME": db_name,
+        "all_env_vars_with_mongo": [k for k in os.environ.keys() if "MONGO" in k.upper() or "DB" in k.upper()],
+    }
+
+
 @app.get("/health/db", tags=["health"])
 async def health_db(
     client: AsyncIOMotorClient = Depends(get_client)

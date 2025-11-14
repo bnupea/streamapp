@@ -2,15 +2,28 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from functools import lru_cache
 import os
+import logging
 
 # Load .env file if it exists (for local development)
 # In production/deployment, environment variables should be set directly
 load_dotenv(override=False)
 
+logger = logging.getLogger(__name__)
+
 
 @lru_cache()
 def get_client() -> AsyncIOMotorClient:
     mongo_uri = os.getenv("MONGO_URI")
+    
+    # Debug: Log available environment variables (without sensitive values)
+    if not mongo_uri:
+        logger.warning("MONGO_URI not found in environment variables")
+        # List all env vars that start with MONGO or DB for debugging
+        relevant_vars = {k: "***" if "PASSWORD" in k.upper() or "SECRET" in k.upper() or "URI" in k.upper() else v 
+                        for k, v in os.environ.items() 
+                        if "MONGO" in k.upper() or "DB" in k.upper()}
+        logger.info(f"Relevant environment variables found: {list(relevant_vars.keys())}")
+    
     if not mongo_uri:
         # Provide helpful error message for deployment
         error_msg = (
@@ -24,6 +37,9 @@ def get_client() -> AsyncIOMotorClient:
             "Example: mongodb+srv://user:password@cluster.mongodb.net/"
         )
         raise ValueError(error_msg)
+    
+    # Log that we found the URI (but don't log the actual value for security)
+    logger.info("MONGO_URI found in environment variables")
     
     # Connection options for production deployments
     # These help with connection stability and timeout handling
