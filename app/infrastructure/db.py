@@ -3,17 +3,27 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from functools import lru_cache
 import os
 
-load_dotenv()
+# Load .env file if it exists (for local development)
+# In production/deployment, environment variables should be set directly
+load_dotenv(override=False)
 
 
 @lru_cache()
 def get_client() -> AsyncIOMotorClient:
     mongo_uri = os.getenv("MONGO_URI")
     if not mongo_uri:
-        raise ValueError(
-            "MONGO_URI environment variable is not set. "
-            "Please set it in your environment or .env file."
+        # Provide helpful error message for deployment
+        error_msg = (
+            "MONGO_URI environment variable is not set.\n"
+            "For deployment, set it in your platform's environment variables:\n"
+            "  - Render: Add in Environment tab\n"
+            "  - Heroku: Use 'heroku config:set MONGO_URI=...'\n"
+            "  - Docker: Set in docker-compose.yml or -e flag\n"
+            "  - Other: Set in your platform's environment variable settings\n"
+            "\n"
+            "Example: mongodb+srv://user:password@cluster.mongodb.net/"
         )
+        raise ValueError(error_msg)
     
     # Connection options for production deployments
     # These help with connection stability and timeout handling
