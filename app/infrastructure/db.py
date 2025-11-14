@@ -14,6 +14,6 @@ def get_client() -> AsyncIOMotorClient:
 
 def get_database() -> AsyncIOMotorDatabase:
     client = get_client()
-    db_name = os.getenv("DB_NAME", "testdb")
+    db_name = os.getenv("DB_NAME")
     return client[db_name]
 
