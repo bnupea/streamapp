@@ -46,16 +46,24 @@ def get_client() -> AsyncIOMotorClient:
         logger.info("MONGO_URL found in environment variables (using as MONGO_URI)")
     
     # Connection options for production deployments
-    # These help with connection stability and timeout handling
+    # For mongodb+srv:// connections, TLS is automatically enabled by MongoDB Atlas
+    # We don't need to explicitly set tls=True for +srv connections
     connection_options = {
-        "serverSelectionTimeoutMS": 5000,  # 5 seconds timeout for server selection
-        "connectTimeoutMS": 10000,  # 10 seconds connection timeout
-        "socketTimeoutMS": 20000,  # 20 seconds socket timeout
+        "serverSelectionTimeoutMS": 30000,  # 30 seconds (increased for SSL handshake)
+        "connectTimeoutMS": 30000,  # 30 seconds (increased for SSL handshake)
+        "socketTimeoutMS": 30000,  # 30 seconds socket timeout
         "retryWrites": True,  # Enable retryable writes
         "retryReads": True,  # Enable retryable reads
         "maxPoolSize": 50,  # Maximum number of connections in the pool
         "minPoolSize": 10,  # Minimum number of connections in the pool
     }
+    
+    # For mongodb+srv://, TLS is automatically enabled - don't set it explicitly
+    # Only set TLS options if NOT using +srv protocol
+    if not mongo_uri.startswith("mongodb+srv://"):
+        connection_options["tls"] = True
+        connection_options["tlsAllowInvalidCertificates"] = False
+        connection_options["tlsAllowInvalidHostnames"] = False
     
     return AsyncIOMotorClient(mongo_uri, **connection_options)
 
